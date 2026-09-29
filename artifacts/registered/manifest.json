@@ -1,0 +1,8 @@
+{
+  "model_file": "model_arrival.txt",
+  "preprocessor_file": "preprocessor.json",
+  "model_sha256": "595b1773b58db9734ba83ed6aa5511f018f991d2c384d1a70ae7d156c6d71439",
+  "preprocessor_sha256": "4750f919fa395a8de3acd7ca0be7f3ead3f010f1dabb24926d083363847d1327",
+  "model_version": "provided-2026-09-21",
+  "source": "modelo fornecido em lai-triagem-main.zip; preservado sem serialização pickle"
+}

@@ -1,0 +1,17 @@
+service: "mlops_lai.service:LaiTriagem"
+labels:
+  project: lai-triagem
+  stage: production
+include:
+  - "src/mlops_lai/**/*.py"
+  - "artifacts/registered/**"
+  - "configs/base.yaml"
+python:
+  packages:
+    - bentoml>=1.4,<2
+    - pydantic>=2.8,<3
+    - pydantic-settings>=2.4,<3
+    - lightgbm>=4.5,<5
+    - pandas>=2.2,<4
+    - numpy>=1.26,<3
+    - prometheus-client>=0.20,<1

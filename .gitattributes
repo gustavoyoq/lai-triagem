@@ -1,0 +1,15 @@
+# Artefatos são verificados por SHA-256: nunca alterar suas quebras de linha.
+artifacts/registered/model_arrival.txt -text
+artifacts/registered/preprocessor.json -text
+artifacts/registered/manifest.json -text
+
+# Código e configurações mantêm a mesma representação em todos os sistemas.
+*.py text eol=lf
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.lock text eol=lf
+Dockerfile text eol=lf
+Makefile text eol=lf
+justfile text eol=lf

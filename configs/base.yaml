@@ -1,0 +1,31 @@
+project:
+  name: lai-triagem
+  seed: 42
+data:
+  raw_path: data/raw/training.csv
+  processed_path: data/processed/training.parquet
+  target_column: FoiReencaminhado
+  date_column: DataRegistro
+  date_format: "%d/%m/%Y"
+  maturity_days: 60
+split:
+  train_years: [2022, 2023, 2024]
+  validation_year: 2025
+  test_year: 2026
+model:
+  type: lightgbm
+  learning_rate: 0.05
+  num_leaves: 31
+  feature_fraction: 0.9
+  bagging_fraction: 0.9
+  bagging_freq: 1
+  min_data_in_leaf: 30
+  num_boost_round: 500
+  early_stopping_rounds: 50
+  queue_fraction: 0.10
+artifact:
+  output_dir: artifacts/generated
+  schema_version: 1
+reports:
+  training_metrics_path: reports/training_metrics.json
+  evaluation_path: reports/evaluation.json

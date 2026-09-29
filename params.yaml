@@ -1,0 +1,7 @@
+seed: 42
+data_snapshot: "20260914"
+maturity_days: 60
+queue_fraction: 0.10
+train_years: [2022, 2023, 2024]
+validation_year: 2025
+test_year: 2026

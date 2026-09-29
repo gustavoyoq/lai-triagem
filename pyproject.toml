@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mlops-lai-triagem"
+version = "1.0.0"
+description = "Pipeline e serviço MLOps para triagem de pedidos LAI"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "Equipe MLOps" }]
+dependencies = [
+  "bentoml==1.4.39",
+  "pydantic==2.13.5",
+  "pydantic-settings==2.15.0",
+  "lightgbm==4.7.0",
+  "pandas==2.3.3",
+  "numpy==2.3.4",
+  "scikit-learn==1.9.1",
+  "pyarrow==24.0.0",
+  "PyYAML==6.0.3",
+  "prometheus-client==0.26.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.2",
+  "pytest-cov==6.3.0",
+  "ruff==0.16.8",
+  "mypy==1.20.2",
+  "uv==0.12.17",
+]
+
+[project.scripts]
+lai-prepare = "mlops_lai.pipelines.prepare:main"
+lai-train = "mlops_lai.pipelines.train:main"
+lai-evaluate = "mlops_lai.pipelines.evaluate:main"
+lai-validate-artifact = "mlops_lai.pipelines.validate_artifact:main"
+lai-promote = "mlops_lai.pipelines.promote:main"
+lai-drift-report = "mlops_lai.monitoring.drift:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mlops_lai"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --disable-warnings --maxfail=1 --basetemp=.pytest-tmp"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+ignore_missing_imports = true
+warn_unused_ignores = true
+no_implicit_optional = true

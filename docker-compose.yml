@@ -1,0 +1,18 @@
+services:
+  api:
+    build:
+      context: .
+    image: lai-triagem:provided-2026-09-21
+    ports:
+      - "3000:3000"
+    environment:
+      MLOPS_ENV: production
+      MLOPS_ARTIFACT_DIR: artifacts/registered
+      MLOPS_MODEL_VERSION: provided-2026-09-21
+      MLOPS_ENABLE_TELEMETRY: "false"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
