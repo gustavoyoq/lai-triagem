@@ -76,6 +76,7 @@ class LaiTriagem:
 
     @bentoml.api
     def score(self, pedido: PedidoLAI) -> dict[str, Any]:
+        """Calcula a probabilidade de reencaminhamento de um pedido LAI."""
         try:
             return self.handler.score(pedido)
         except ContractError as exc:

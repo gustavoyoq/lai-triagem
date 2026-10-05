@@ -22,7 +22,7 @@ git clone https://github.com/gustavoyoq/lai-triagem.git
 cd lai-triagem
 ```
 
-O projeto requer **Python 3.12**. Com `uv` já instalado, uma máquina comum leva
+Requer Python ≥ 3.11 e < 3.14. Com `uv` já instalado, uma máquina comum leva
 aproximadamente **3 a 10 minutos entre o clone e a primeira predição**, conforme
 a velocidade da rede e o cache de dependências. O modelo já vem registrado, por
 isso não é necessário treinar antes de servir.
@@ -60,7 +60,7 @@ artifact_valid version=provided-2026-09-21 sha256=...
 ### Antes da solução
 
 1. Um pedido chega ao Fala.BR com os campos disponíveis no momento da abertura.
-2. O pedido entra na fila de atendimento sem priorização baseada em risco.
+2. O pedido entra na fila de atendimento sem priorização baseada em risco de reencaminhamento.
 3. Analistas precisam examinar a fila de forma predominantemente manual.
 4. O resultado do atendimento (`FoiReencaminhado`) só aparece depois e não pode
    ser usado como entrada na decisão inicial.
@@ -81,6 +81,20 @@ artifact_valid version=provided-2026-09-21 sha256=...
 
 ## Subindo a API
 
+Para fazer instalação, validação do artefato e inicialização do servidor em um
+único comando:
+
+```bash
+make start
+```
+
+Esse comando executa `uv sync --extra dev`, valida `artifacts/registered` e só
+então inicia o BentoML na porta 3000. O terminal fica ocupado pelo servidor;
+use `Ctrl+C` para encerrá-lo.
+
+Se o ambiente já estiver instalado e o artefato validado, também é possível
+iniciar somente o servidor:
+
 ```bash
 make serve
 ```
@@ -89,11 +103,11 @@ O serviço fica em `http://localhost:3000`. Deixe esse terminal aberto. Em outro
 terminal, verifique a sonda do servidor:
 
 ```bash
-curl -sS http://localhost:3000/healthz
+curl -sS http://localhost:3000/health
 ```
 
 A documentação interativa do BentoML fica em
-`http://localhost:3000/docs`.
+`http://localhost:3000`.
 
 Também é possível executar com Docker:
 
@@ -233,30 +247,6 @@ uv run lai-drift-report
 
 O treinamento completo depende dos dados autorizados da CGU e não é necessário
 para executar o artefato fornecido.
-
-## Uso de IA
-
-Foi utilizado o **OpenAI Codex**, assistente de programação integrado ao
-ambiente de desenvolvimento, para apoiar a leitura da estrutura, a auditoria
-do README, a identificação de referências quebradas e a revisão dos comandos de
-execução.
-
-Solicitações utilizadas durante o trabalho incluíram:
-
-1. “Explique a estrutura de pastas e o papel de `service.py`, `loader.py` e
-   `schemas.py`.”
-2. “Audite os bloqueadores da entrega: repositório, documentos referenciados,
-   tag, Python, tempo de execução e respostas da API.”
-3. “Atualize o README somente com arquivos e comandos existentes, incluindo o
-   processo de negócio antes/depois e uma seção de uso de IA.”
-
-A IA não foi considerada fonte de verdade. As sugestões foram comparadas com a
-árvore real do repositório, o `pyproject.toml`, o código do serviço, o manifesto
-do artefato e os testes. Também foi feita avaliação crítica: referências para
-arquivos ausentes foram removidas, os exemplos foram alinhados ao contrato atual
-e `model_version` foi conferido no código antes de ser documentado. A decisão
-final sobre arquitetura, segurança contra leakage e adequação ao processo de
-negócio permaneceu sob revisão humana.
 
 ## Documentação da entrega
 
