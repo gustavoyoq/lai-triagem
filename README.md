@@ -162,11 +162,56 @@ Nesse caso, a resposta informa `historico_informado: false`. Se apenas parte dos
 oito campos for enviada, o conjunto inteiro é ignorado e
 `historico_parcial_ignorado` será `true`.
 
+### Caso 2: órgão conhecido com baixo risco
+
+Este caso usa um órgão conhecido com baixa taxa histórica:
+
+```bash
+make test-2
+```
+
+O resultado esperado é aproximadamente:
+
+```json
+{
+  "probabilidade_reencaminhamento": 0.00371,
+  "alerta": "BAIXO RISCO",
+  "orgao_conhecido": true,
+  "orgao_rate_historica": 0.003393,
+  "historico_informado": false,
+  "model_version": "provided-2026-09-21"
+}
+```
+
+### Caso 3: órgão conhecido com alto risco, sem histórico
+
+Este caso mostra uma probabilidade acima de 0,3 mesmo sem enviar os oito campos
+de histórico:
+
+```bash
+make test-3
+```
+
+O resultado esperado é aproximadamente:
+
+```json
+{
+  "probabilidade_reencaminhamento": 0.354094,
+  "alerta": "ALTO RISCO",
+  "threshold": 0.159391,
+  "orgao_conhecido": true,
+  "historico_informado": false,
+  "model_version": "provided-2026-09-21"
+}
+```
+
 O endpoint `score_baseline` permite comparar o modelo com uma consulta simples à
 taxa histórica do órgão:
 
 ```bash
-make test-2
+curl -sS -X POST http://localhost:3000/score_baseline \
+  -H 'Content-Type: application/json' \
+  -d '{"pedido":{"OrgaoDestinatario":"CC-PR – Casa Civil da Presidência da República","DataRegistro":"15/09/2026"}}'
 ```
 
 Sua resposta inclui, por exemplo:
@@ -247,6 +292,22 @@ uv run lai-drift-report
 
 O treinamento completo depende dos dados autorizados da CGU e não é necessário
 para executar o artefato fornecido.
+
+## Uso de IA
+
+Utilizamos o **OpenAI Codex** como apoio durante o desenvolvimento e a revisão
+da entrega. A ferramenta foi usada para:
+
+- Identificar e corrigir eventuais bugs e erros no código, nos comandos e na
+  documentação;
+- Comparar alternativas de implementação e de organização do projeto;
+- Validar os requisitos da atividade, incluindo contrato da API, exemplos de
+  uso, dependências, documentação, tag de entrega e evidências de execução.
+
+As sugestões da IA foram conferidas pela equipe no código, nos testes, no
+artefato registrado e na execução da API. A ferramenta não foi considerada
+fonte única de verdade: as decisões finais e a validação do funcionamento
+permaneceram sob responsabilidade da equipe.
 
 ## Documentação da entrega
 
