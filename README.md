@@ -8,10 +8,8 @@ pedido como `ALTO RISCO` ou `BAIXO RISCO` e fornece informações para auditoria
 O modelo não toma a decisão administrativa: ele prioriza a fila para análise
 humana.
 
-> **Limitação importante:** antes de usar o escore em produção, leia a
-> [auditoria da entrega](docs/DELIVERY_AUDIT.md). O artefato pré-treinado está
-> versionado, mas a reprodução numérica depende do snapshot autorizado dos
-> dados da CGU.
+O artefato pré-treinado está versionado. Sua reprodução numérica depende do
+snapshot autorizado dos dados da CGU.
 
 ## Repositório e tempo esperado
 
@@ -77,7 +75,8 @@ artifact_valid version=provided-2026-09-21 sha256=...
 5. Analistas seniores usam o resultado para priorizar a fila; a decisão final
    continua humana.
 6. Resultados operacionais podem alimentar avaliação, monitoramento e novo ciclo
-   de treinamento, sem que dados pessoais sejam gravados na telemetria.
+   de treinamento. A telemetria registra as variáveis selecionadas do contrato,
+   features e previsões para acompanhar o comportamento do serviço.
 
 ## Subindo a API
 
@@ -103,7 +102,7 @@ O serviço fica em `http://localhost:3000`. Deixe esse terminal aberto. Em outro
 terminal, verifique a sonda do servidor:
 
 ```bash
-curl -sS http://localhost:3000/health
+curl -sS http://localhost:3000/healthz
 ```
 
 A documentação interativa do BentoML fica em
@@ -249,6 +248,7 @@ evita data leakage.
 - `POST /health`: informações de saúde e integridade do artefato.
 - `POST /metadata`: contrato e metadados do modelo.
 - `GET /healthz`: sonda de liveness fornecida pelo BentoML.
+- `GET /metrics`: métricas HTTP e de inferência no formato Prometheus.
 
 ## Estrutura principal
 
@@ -264,12 +264,86 @@ src/mlops_lai/
 └── monitoring/                # telemetria e detecção de drift
 artifacts/registered/           # modelo e metadados usados pela API
 tests/                          # testes automatizados
-docs/                           # auditorias e evidências da entrega
+outputs/monitoramento/          # planilha de apoio ao monitoramento
+docs/APRESENTACAO.md            # apresentação com tabelas e resultados
 ```
 
 O modelo registrado é composto por `model_arrival.txt`,
 `preprocessor.json` e `manifest.json`. O manifesto contém os hashes SHA-256
 usados para verificar integridade no startup.
+
+## Logs, carga e métricas
+
+A telemetria vem habilitada. Cada processo grava um arquivo append-only UTF-8
+`monitoring/telemetry/scoring.<execucao>.<pid>.jsonl`. Cada linha correlaciona
+entrada, 31 features efetivamente usadas, previsão, resposta, qualidade da entrada,
+latência e status HTTP. `/score_baseline` também é registrado. Rejeições de
+contrato e de JSON deixam um evento com motivo padronizado.
+
+As tabelas de métricas, os resultados da carga e a interpretação dos cálculos
+estão no [documento de apresentação](docs/APRESENTACAO.md).
+
+
+Com o servidor aberto, gere uma carga reproduzível de 120 chamadas em outro terminal.
+O comando inclui 60 sucessos e 60 rejeições esperadas, distribuídos em 12 cenários.
+
+```bash
+uv run python scripts/generate_load.py --requests 120 --concurrency 4
+```
+
+No Bash, acompanhe o arquivo de um dos processos após iniciar a API.
+
+```bash
+tail -f "$(ls -t monitoring/telemetry/scoring.*.jsonl | head -n 1)"
+```
+
+No PowerShell, o comando equivalente é
+
+```powershell
+$log = Get-ChildItem monitoring/telemetry/scoring.*.jsonl |
+  Sort-Object LastWriteTime -Descending | Select-Object -First 1
+Get-Content -LiteralPath $log.FullName -Encoding utf8 -Wait
+```
+
+Confira os contadores e os buckets antes e depois da carga.
+
+```bash
+curl -sS http://localhost:3000/metrics
+```
+
+No PowerShell, use `curl.exe -sS http://localhost:3000/metrics`.
+
+
+Gere uma análise exploratória usando as primeiras 20 inferências `/score`
+bem-sucedidas como referência e as restantes como janela atual.
+
+```bash
+uv run lai-drift-report --telemetry monitoring/telemetry --reference-rows 20
+```
+
+O comando salva `reports/drift.json` com identificação da referência, KS D, PSI,
+histogramas e quartis das variáveis numéricas disponíveis. Também aceita um
+arquivo de referência fixo por `--reference caminho/referencia.jsonl`.
+As amostras são filtradas por endpoint, sucesso e versão do modelo.
+
+
+Para subir a API e o Prometheus com volumes persistentes e coleta a cada 15 segundos,
+execute
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up --build
+```
+
+O Prometheus fica em `http://localhost:9090`. Sua retenção está configurada em
+15 dias. Os logs permanecem no volume `telemetry-data` até remoção explícita.
+Para ler os arquivos dentro do container, use
+
+```bash
+docker compose exec api python -c "from pathlib import Path; print('\n'.join(p.read_text(encoding='utf-8') for p in Path('/app/monitoring/telemetry').glob('*.jsonl')))"
+```
+
+As variáveis de configuração estão em `.env.example`, incluindo a chave
+`MLOPS_ENABLE_TELEMETRY` e o prazo `MLOPS_REQUEST_TIMEOUT_SECONDS`, de 20 segundos.
 
 ## Desenvolvimento e validação
 
@@ -292,27 +366,6 @@ uv run lai-drift-report
 
 O treinamento completo depende dos dados autorizados da CGU e não é necessário
 para executar o artefato fornecido.
-
-## Uso de IA
-
-Utilizamos o **OpenAI Codex** como apoio durante o desenvolvimento e a revisão
-da entrega. A ferramenta foi usada para:
-
-- Identificar e corrigir eventuais bugs e erros no código, nos comandos e na
-  documentação;
-- Comparar alternativas de implementação e de organização do projeto;
-- Validar os requisitos da atividade, incluindo contrato da API, exemplos de
-  uso, dependências, documentação, tag de entrega e evidências de execução.
-
-As sugestões da IA foram conferidas pela equipe no código, nos testes, no
-artefato registrado e na execução da API. A ferramenta não foi considerada
-fonte única de verdade: as decisões finais e a validação do funcionamento
-permaneceram sob responsabilidade da equipe.
-
-## Documentação da entrega
-
-- [Auditoria da entrega](docs/DELIVERY_AUDIT.md)
-- [Evidência de execução local](docs/EXECUTION_EVIDENCE.md)
 
 ## Dados e licença
 

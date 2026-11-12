@@ -9,10 +9,16 @@ services:
       MLOPS_ENV: production
       MLOPS_ARTIFACT_DIR: artifacts/registered
       MLOPS_MODEL_VERSION: provided-2026-09-21
-      MLOPS_ENABLE_TELEMETRY: "false"
+      MLOPS_ENABLE_TELEMETRY: "true"
+      MLOPS_TELEMETRY_PATH: /app/monitoring/telemetry/scoring.jsonl
+    volumes:
+      - telemetry-data:/app/monitoring/telemetry
     read_only: true
     tmpfs:
       - /tmp
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
+
+volumes:
+  telemetry-data:

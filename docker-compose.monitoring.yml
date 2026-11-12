@@ -1,10 +1,17 @@
 services:
   prometheus:
     image: prom/prometheus:v2.54.1
-    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
     ports:
       - "9090:9090"
     depends_on:
       - api
+
+volumes:
+  prometheus-data:

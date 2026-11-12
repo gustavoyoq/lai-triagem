@@ -15,6 +15,6 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev]"
-      - run: ruff check src tests
+      - run: ruff check src tests scripts
       - run: pytest --cov=mlops_lai --cov-report=term-missing
       - run: lai-validate-artifact --artifact-dir artifacts/registered

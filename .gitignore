@@ -18,5 +18,11 @@ artifacts/generated/*
 !artifacts/generated/.gitkeep
 reports/*.json
 monitoring/telemetry/*.jsonl
+monitoring/telemetry/**/*.jsonl
+monitoring/telemetry/**/*.prom
+reports/*.csv
+reports/*.xlsx
+.bentoml/
+.uv-cache/
 !monitoring/telemetry/.gitkeep
 .dvc/cache/

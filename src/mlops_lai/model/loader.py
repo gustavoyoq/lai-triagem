@@ -85,9 +85,20 @@ class ModelService:
             if sha256_file(candidate) != known_hash:
                 raise ArtifactError(f"checksum SHA-256 inválido: {candidate.name}")
 
-    def score(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def score(
+        self, payload: dict[str, Any], *, telemetry: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        if telemetry is not None:
+            telemetry["stage"] = "preprocessing"
         features = self.preprocessor.transform(payload)
+        if telemetry is not None:
+            telemetry["features"] = features.iloc[0].to_dict()
+            telemetry["quality"] = self.preprocessor.monitoring_state(payload, features)
+            telemetry["stage"] = "inference"
         raw_score = float(self.booster.predict(features)[0])
+        if telemetry is not None:
+            telemetry["prediction_raw"] = raw_score
+            telemetry["stage"] = "calibration"
         calibrated = self.preprocessor.calibrate(raw_score)
         history = self.preprocessor.history_state(payload)
         organ = str(payload["OrgaoDestinatario"]).strip()

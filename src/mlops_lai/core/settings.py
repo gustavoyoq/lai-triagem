@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -18,9 +19,10 @@ class Settings(BaseSettings):
     env: str = "development"
     artifact_dir: Path = Path("artifacts/registered")
     model_version: str = "provided-2026-09-21"
-    enable_telemetry: bool = False
+    enable_telemetry: bool = True
     telemetry_path: Path = Path("monitoring/telemetry/scoring.jsonl")
     log_level: str = "INFO"
+    request_timeout_seconds: float = Field(default=20, gt=0)
 
     def resolved_artifact_dir(self) -> Path:
         return self._resolve(self.artifact_dir)

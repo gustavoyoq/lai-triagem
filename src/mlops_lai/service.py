@@ -7,6 +7,7 @@ mesmo contrato de artefato.
 
 from __future__ import annotations
 
+from time import perf_counter_ns
 from typing import Any
 
 import bentoml
@@ -17,7 +18,8 @@ from mlops_lai.core.settings import Settings, get_settings
 from mlops_lai.domain.schemas import PedidoLAI
 from mlops_lai.features.preprocessor import LEAKAGE_FIELDS
 from mlops_lai.model.loader import ModelService
-from mlops_lai.monitoring.telemetry import LATENCY, TelemetryRecorder
+from mlops_lai.monitoring.middleware import TelemetryMiddleware
+from mlops_lai.monitoring.telemetry import LATENCY, get_recorder
 
 
 class ScoringHandler:
@@ -28,23 +30,35 @@ class ScoringHandler:
         self.model = ModelService(
             self.settings.resolved_artifact_dir(), expected_version=self.settings.model_version
         )
-        self.telemetry = TelemetryRecorder(
-            self.settings.enable_telemetry, self.settings.resolved_telemetry_path()
-        )
+        self.telemetry = get_recorder(self.settings)
+        self.telemetry.preprocessor = self.model.preprocessor
+        self.telemetry.model_version = self.model.version
+        self.telemetry.artifact_sha256 = self.model.artifact_sha256
 
     def score(self, pedido: PedidoLAI) -> dict[str, Any]:
-        with LATENCY.time():
-            result = self.model.score(pedido.model_dump(exclude_none=True))
-        self.telemetry.record(
-            score=result["probabilidade_reencaminhamento"],
-            model_version=result["model_version"],
-            organ_known=result["orgao_conhecido"],
-            history_supplied=result["historico_informado"],
-        )
-        return result
+        payload = pedido.model_dump(exclude_none=True)
+        with self.telemetry.operation("/score", payload) as event:
+            start = perf_counter_ns()
+            try:
+                with LATENCY.time():
+                    result = self.model.score(payload, telemetry=event)
+            finally:
+                event["inference_ms"] = (perf_counter_ns() - start) / 1_000_000
+            event["response"] = result
+            return result
 
     def score_baseline(self, pedido: PedidoLAI) -> dict[str, Any]:
-        return self.model.baseline(pedido.model_dump(exclude_none=True))
+        payload = pedido.model_dump(exclude_none=True)
+        with self.telemetry.operation("/score_baseline", payload) as event:
+            event["stage"] = "baseline_lookup"
+            result = self.model.baseline(payload)
+            event["prediction_raw"] = float(
+                self.model.preprocessor.organ_rate.get(
+                    str(payload["OrgaoDestinatario"]).strip(), self.model.preprocessor.base_rate
+                )
+            )
+            event["response"] = result
+            return result
 
     def health(self) -> dict[str, Any]:
         return {
@@ -67,7 +81,12 @@ class ScoringHandler:
         }
 
 
-@bentoml.service(name="lai-triagem", traffic={"timeout": 20}, resources={"cpu": "2"})
+# A margem do runtime permite ao middleware registrar sua própria resposta 504.
+@bentoml.service(
+    name="lai-triagem",
+    traffic={"timeout": get_settings().request_timeout_seconds + 1},
+    resources={"cpu": "2"},
+)
 class LaiTriagem:
     """APIs BentoML: ``POST /score``, ``/score_baseline``, ``/health`` e metadata."""
 
@@ -96,3 +115,10 @@ class LaiTriagem:
     @bentoml.api
     def metadata(self) -> dict[str, Any]:
         return self.handler.metadata()
+
+    @bentoml.on_shutdown
+    def close_telemetry(self) -> None:
+        self.handler.telemetry.close()
+
+
+LaiTriagem.add_asgi_middleware(TelemetryMiddleware)

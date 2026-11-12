@@ -214,6 +214,56 @@ class Preprocessor:
     def organ_is_known(self, organ: str) -> bool:
         return organ.strip() in self.organ_rate
 
+    def monitoring_state(
+        self, payload: dict[str, Any], features: pd.DataFrame | None = None
+    ) -> dict[str, Any]:
+        """Descreve ausência, vocabulário e defaults sem recalcular features."""
+        p = self._normalize(payload)
+        history = self.history_state(p)
+        supplied = sorted(name for name in self.caller_features if p.get(name) is not None)
+        unknown = [
+            name
+            for name in self.categorical
+            if p.get(name) not in (None, "") and str(p[name]) not in self.codes.get(name, {})
+        ]
+        organ = p.get("OrgaoDestinatario")
+        state: dict[str, Any] = {
+            "orgao_conhecido": self.organ_is_known(organ) if isinstance(organ, str) else None,
+            "historico_informado": history.supplied,
+            "historico_parcial_ignorado": history.partial_ignored,
+            "history_fields_received": supplied,
+            "history_field_count": len(supplied),
+            "missing_fields": sorted(name for name in REQUEST_FIELDS if p.get(name) is None),
+            "unknown_categories": unknown,
+            "rejected_fields": sorted(set(p) - REQUEST_FIELDS),
+            "leakage_fields": sorted(set(p) & LEAKAGE_FIELDS),
+            "birth_date_supplied": p.get("DataNascimento") is not None,
+            "age_state": "not_processed",
+            "default_features": [],
+            "missing_features": [],
+            "unknown_organ": isinstance(organ, str) and not self.organ_is_known(organ),
+            "history_absent": not supplied,
+            "history_partial": history.partial_ignored,
+        }
+        if features is not None:
+            row = features.iloc[0]
+            state["default_features"] = [
+                name
+                for name, value in row.items()
+                if (name in self.categorical and value == -1)
+                or (
+                    name in set(self.caller_features) | self.derived_from_caller
+                    and value == self.caller_default
+                )
+            ]
+            state["missing_features"] = [name for name, value in row.items() if pd.isna(value)]
+            state["age_state"] = (
+                "valid"
+                if pd.notna(row.get("idade", np.nan))
+                else ("invalid" if state["birth_date_supplied"] else "absent")
+            )
+        return state
+
     def calibrate(self, score: float) -> float | None:
         if not self.calibration:
             return None
