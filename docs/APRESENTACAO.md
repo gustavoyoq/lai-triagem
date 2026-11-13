@@ -75,6 +75,16 @@ Com a API iniciada conforme o README, executar na raiz do repositório
 uv run python scripts/generate_load.py --requests 120 --concurrency 4
 ```
 
+O script distribui os 120 pedidos entre 12 cenários determinísticos: 60 sucessos
+em `POST /score` e `POST /score_baseline` (alto risco, baixo risco, órgão
+desconhecido e histórico completo, ausente e parcial) e 60 rejeições (data
+inválida, tipo inválido, campo obrigatório ausente, campo extra, campo de
+leakage e JSON inválido). Como `OrgaoDestinatario` integra
+`categorical_features`, o cenário `unknown` com órgão fora do vocabulário de
+treino aciona simultaneamente `unknown_organ` e `unknown_categories`
+(`["OrgaoDestinatario"]`) no objeto `quality` do JSONL e no contador
+`lai_input_quality_events_total`.
+
 No Bash, acompanhar o arquivo de um dos processos com
 
 ```bash
