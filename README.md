@@ -264,8 +264,8 @@ src/mlops_lai/
 └── monitoring/                # telemetria e detecção de drift
 artifacts/registered/           # modelo e metadados usados pela API
 tests/                          # testes automatizados
-outputs/monitoramento/          # planilha de apoio ao monitoramento
-docs/APRESENTACAO.md            # apresentação com tabelas e resultados
+docs/monitoramento.xlsx         # planilha de apoio ao monitoramento e /metrics
+docs/APRESENTACAO.md            # apresentação com tabelas, análises e resultados
 ```
 
 O modelo registrado é composto por `model_arrival.txt`,

@@ -6,9 +6,9 @@ import json
 import logging
 import math
 import os
+import time
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from time import perf_counter_ns
@@ -53,7 +53,8 @@ CURRENT_EVENT: ContextVar[dict[str, Any] | None] = ContextVar("lai_event", defau
 
 
 def timestamp() -> str:
-    return datetime.now(UTC).isoformat(timespec="microseconds")
+    record = logging.LogRecord("mlops_lai", logging.INFO, "", 0, "", (), None)
+    return _TIMESTAMP_FORMATTER.formatTime(record, _TIMESTAMP_FORMATTER.datefmt)
 
 
 def json_safe(value: Any) -> Any:
@@ -80,8 +81,18 @@ def selected_input(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 class JsonFormatter(logging.Formatter):
+    converter = staticmethod(time.gmtime)
+
+    def __init__(self) -> None:
+        super().__init__(fmt="%(asctime)s %(message)s")
+
     def format(self, record: logging.LogRecord) -> str:
-        return json.dumps(json_safe(record.msg), ensure_ascii=False, allow_nan=False)
+        payload = dict(record.msg) if isinstance(record.msg, dict) else {"message": record.msg}
+        payload["timestamp_utc"] = self.formatTime(record, self.datefmt)
+        return json.dumps(json_safe(payload), ensure_ascii=False, allow_nan=False)
+
+
+_TIMESTAMP_FORMATTER = JsonFormatter()
 
 
 class AppendHandler(logging.FileHandler):

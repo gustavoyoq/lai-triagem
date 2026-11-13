@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -65,6 +66,8 @@ def test_features_match_actual_model_input_and_append_preserves_bytes(scoring, m
     assert event["input"]["prev_reenc_solicitante_den"] == 80
     assert event["quality"]["age_state"] == "valid"
     assert "DataNascimento" not in event["input"]
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}", event["started_at_utc"])
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}", event["timestamp_utc"])
     scoring.score(PedidoLAI(**BASE))
     assert scoring.telemetry.path.read_bytes().startswith(first_bytes)
     assert len(read_events(scoring.telemetry.path)) == 2
