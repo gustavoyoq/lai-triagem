@@ -45,7 +45,7 @@ packages = ["src/mlops_lai"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --disable-warnings --maxfail=1 --basetemp=.pytest-tmp"
+addopts = "-q --disable-warnings --maxfail=1"
 
 [tool.ruff]
 line-length = 100
