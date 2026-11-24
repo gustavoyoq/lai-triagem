@@ -272,6 +272,16 @@ O modelo registrado é composto por `model_arrival.txt`,
 `preprocessor.json` e `manifest.json`. O manifesto contém os hashes SHA-256
 usados para verificar integridade no startup.
 
+## Entrega da AV2
+
+- [Relatório final da AV2 em PDF](docs/RELATORIO_AV2.pdf) com resultados, boxplot e gráfico de violino.
+- [Manual da AV2](docs/MANUAL_AV2.md) para abrir o painel e reproduzir a coleta e os cálculos.
+
+Execute `make dashboard` e abra `http://127.0.0.1:8501` para consultar a
+rodada arquivada, recalcular p90, p95, p99, PSI e KS e baixar as medições.
+O comando `make reproduce-av2` recria os lotes, recalcula e confere os
+valores publicados no PDF a partir dos registros da rodada.
+
 ## Logs, carga e métricas
 
 A telemetria vem habilitada. Cada processo grava um arquivo append-only UTF-8
